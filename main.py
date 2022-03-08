@@ -1,10 +1,14 @@
-from types import NoneType
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
 from data_pipeline.data_pipeline import *
 
 from datetime import datetime
+
+
+TRAIN_IMAGES = 100
+TEST_IMAGES = 100
+VAL_IMAGES = 100
 
 
 if __name__ == '__main__':
@@ -20,9 +24,11 @@ if __name__ == '__main__':
     LEARNING_RATE = 0.1
 
     # model and loss
-    model = None
-    optimizer = None
-    loss = None
+    #input = tf.keras.Input(shape=(SIZE[0],SIZE[1],1))
+    #conv2d = tf.keras.layers.Conv2D(filters=2, kernel_size=3, strides=1, padding='same', activation=None, use_bias=True)(input)
+    #model = tf.keras.Model(inputs=input, outputs=conv2d)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
+    loss = tf.nn.l2_loss
 
     # lists for losses and accuracies
     train_losses = []
@@ -45,7 +51,7 @@ if __name__ == '__main__':
     
     #   We train for num_epochs epochs.
     for epoch in range(NUM_EPOCHS):
-        start_time = datetime.datetime.now()
+        start_time = datetime.now()
         print(f'Epoch: {str(epoch)} starting with accuracy {test_accuracies[-1]}')
         # training (and checking in with training)
         epoch_loss_agg = []
@@ -58,7 +64,7 @@ if __name__ == '__main__':
         test_loss, test_accuracy = test(model, test_ds, loss)
         test_losses.append(test_loss)
         test_accuracies.append(test_accuracy)
-        diff_time = datetime.datetime.now() - start_time
+        diff_time = datetime.now() - start_time
         print(f"Epoch {epoch} took {diff_time} to complete.")
 
         images = []

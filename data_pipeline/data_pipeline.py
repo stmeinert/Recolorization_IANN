@@ -8,10 +8,7 @@ import numpy as np
 
 
 SIZE = (128,128)
-TRAIN_IMAGES = 100
-TEST_IMAGES = 100
-VAL_IMAGES = 100
-
+BATCH_SIZE = 32
 
 #################################################
 # Prepare data
@@ -49,7 +46,7 @@ def prepare_image_data(image_ds):
     # ab are in range [-128;127]
     image_ds = image_ds.map(lambda image, target: ((image/50)-1, target))
 
-    #image_ds = image_ds.shuffle(1000).batch(32)#.prefetch(20)
+    image_ds = image_ds.shuffle(1000).batch(BATCH_SIZE)#.prefetch(20)
     return image_ds
 
 
@@ -96,14 +93,20 @@ def test(model, test_data, loss_function):
     test_loss_aggregator = []
     for (input, target) in test_data:
         prediction = model(input)
+
+        # get l channel, target should be in shape (batch, SIZE, SIZE, lab)
+        l = tf.slice(target, begin=[0,0,0,0], size=[-1,-1,-1,1])
+        prediction = tf.concat([l, prediction], axis=-1) # should be concatenated along last dimension
+
         sample_test_loss = loss_function(target, prediction)
         
         # TODO -> what is the accuracy here?
-        sample_test_accuracy =  np.argmax(target, axis=1) == np.argmax(prediction, axis=1)
-        sample_test_accuracy = np.mean(sample_test_accuracy)
+        #sample_test_accuracy =  np.argmax(target, axis=1) == np.argmax(prediction, axis=1)
+        sample_test_accuracy = tf.reduce_all(tf.equal(prediction, target))
+        #sample_test_accuracy = np.mean(sample_test_accuracy)
         test_loss_aggregator.append(sample_test_loss.numpy())
-        test_accuracy_aggregator.append(np.mean(sample_test_accuracy))
+        test_accuracy_aggregator.append(sample_test_accuracy)
 
     test_loss = tf.reduce_mean(test_loss_aggregator)
-    test_accuracy = tf.reduce_mean(test_accuracy_aggregator)
+    test_accuracy = tf.reduce_sum(tf.cast(test_accuracy_aggregator, tf.float32)) / tf.size(test_accuracy_aggregator, out_type=tf.float32)
     return test_loss, test_accuracy

@@ -74,6 +74,8 @@ def train_step(model, input, target, loss_function, optimizer):
         l = tf.slice(target, begin=[0,0,0,0], size=[-1,-1,-1,1])
         prediction = tf.concat([l, prediction], axis=-1) # should be concatenated along last dimension
 
+        #print(target)
+        #print(prediction)
         loss = loss_function(target, prediction)
 
     gradients = tape.gradient(loss, model.trainable_variables)

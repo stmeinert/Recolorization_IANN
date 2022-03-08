@@ -5,10 +5,11 @@ from data_pipeline.data_pipeline import *
 
 from datetime import datetime
 
+from zhang import CIC
 
-TRAIN_IMAGES = 100
-TEST_IMAGES = 100
-VAL_IMAGES = 100
+TRAIN_IMAGES = 10
+TEST_IMAGES = 10
+VAL_IMAGES = 10
 
 
 if __name__ == '__main__':
@@ -27,8 +28,9 @@ if __name__ == '__main__':
     #input = tf.keras.Input(shape=(SIZE[0],SIZE[1],1))
     #conv2d = tf.keras.layers.Conv2D(filters=2, kernel_size=3, strides=1, padding='same', activation=None, use_bias=True)(input)
     #model = tf.keras.Model(inputs=input, outputs=conv2d)
+    model = CIC()
     optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
-    loss = tf.nn.l2_loss
+    loss = tf.keras.losses.MeanSquaredError()
 
     # lists for losses and accuracies
     train_losses = []
@@ -67,12 +69,16 @@ if __name__ == '__main__':
         diff_time = datetime.now() - start_time
         print(f"Epoch {epoch} took {diff_time} to complete.")
 
+        with file_writer.as_default():
+            tf.summary.scalar("Loss", test_loss, step=epoch)
+
         images = []
-        for input, target in test_ds.take(25):
+        for input, target in test_ds.take(1):
+            #print(input, target)
             prediction = model(input)
 
             # get l channel, target should be in shape (SIZE, SIZE, lab)
-            l = tf.slice(target, begin=[0,0,0], size=[-1,-1,1])
+            l = tf.slice(target, begin=[0,0,0,0], size=[-1,-1,-1,1])
             prediction = tf.concat([l, prediction], axis=-1) # should be concatenating along last dimension
 
             # convert prediction and target back to rgb, input to [0;1]
@@ -80,10 +86,12 @@ if __name__ == '__main__':
             prediction = tfio.experimental.color.lab_to_rgb(prediction)
             target = tfio.experimental.color.lab_to_rgb(target)
 
-            images.append((input, prediction, target))
+            #images.append((input, prediction, target))
 
             with file_writer.as_default():
-                tf.summary.image(f'Epoch{epoch}', images, max_outputs=25, step=0)
+                tf.summary.image(f'Input', input, max_outputs=BATCH_SIZE, step=epoch)
+                tf.summary.image('Target', target, max_outputs=BATCH_SIZE, step=epoch)
+                tf.summary.image('Prediciton', prediction, max_outputs=BATCH_SIZE, step=epoch)
 
 
 

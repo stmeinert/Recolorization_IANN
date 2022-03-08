@@ -42,11 +42,35 @@ def prepare_image_data(image_ds):
     # only take l channel of input tensor
     image_ds = image_ds.map(lambda image, target: (to_grayscale(image), target))
 
-    # l in lab is in [0;100] -> normalize to [0;1]/[-1;1]?
+    # l in lab is in [0;100] -> normalize to [-1;1]
     # ab are in range [-128;127]
     image_ds = image_ds.map(lambda image, target: ((image/50)-1, target))
 
-    image_ds = image_ds.shuffle(1000).batch(BATCH_SIZE)#.prefetch(20)
+    image_ds = image_ds.shuffle(1000).batch(BATCH_SIZE).prefetch(20)
+    return image_ds
+
+
+def prepare_validation_data(image_ds):
+    """
+    Same as for train and test data, but don't shuffle so you can the progress over same image in tensorboard
+    """
+    # resize image to desired dimension, replace label with colored image
+    image_ds = image_ds.map(lambda x: (resize(x['image']), resize(x['image'])))
+
+    # normalize data to [0;1) for lab encoder
+    image_ds = image_ds.map(lambda image, target: ((image/256), (target/256)))
+
+    # convert image and target image to lab color space
+    image_ds = image_ds.map(lambda image, target: (to_lab(image), to_lab(target)))
+
+    # only take l channel of input tensor
+    image_ds = image_ds.map(lambda image, target: (to_grayscale(image), target))
+
+    # l in lab is in [0;100] -> normalize to [-1;1]
+    # ab are in range [-128;127]
+    image_ds = image_ds.map(lambda image, target: ((image/50)-1, target))
+
+    image_ds = image_ds.batch(BATCH_SIZE).prefetch(20)
     return image_ds
 
 
@@ -74,8 +98,6 @@ def train_step(model, input, target, loss_function, optimizer):
         l = tf.slice(target, begin=[0,0,0,0], size=[-1,-1,-1,1])
         prediction = tf.concat([l, prediction], axis=-1) # should be concatenated along last dimension
 
-        #print(target)
-        #print(prediction)
         loss = loss_function(target, prediction)
 
     gradients = tape.gradient(loss, model.trainable_variables)

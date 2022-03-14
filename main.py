@@ -8,6 +8,7 @@ from datetime import datetime
 
 from zhang import CIC
 from izuka import IizukaRecolorizationModel
+from zhang_prob import CIC_Prob
 
 from loss.l2_loss import L2_Loss
 
@@ -29,7 +30,7 @@ if __name__ == '__main__':
     LEARNING_RATE = 0.001
 
     # model and loss
-    model = CIC()
+    model = CIC_Prob()
     #model = IizukaRecolorizationModel()
     optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
     #loss = tf.keras.losses.MeanSquaredError()
@@ -41,12 +42,14 @@ if __name__ == '__main__':
     test_accuracies = []
 
     # testing once before we begin
-    test_loss, test_accuracy = test(model, test_ds, loss)
+    #test_loss, test_accuracy = test(model, test_ds, loss)
+    test_loss, test_accuracy = model.test(test_ds)
     test_losses.append(test_loss)
     test_accuracies.append(test_accuracy)
     
     # check how model performs on train data once before we begin
-    train_loss, _ = test(model, train_ds, loss)
+    #train_loss, _ = test(model, train_ds, loss)
+    train_loss, _ = model.test(train_ds)
     train_losses.append(train_loss)
 
     # Sets up a timestamped log directory.
@@ -56,7 +59,7 @@ if __name__ == '__main__':
 
     # save first version validation images before training starts
     for input, target in val_ds.take(1):
-        prediction = model(input)
+        prediction = model(input, training=False)
 
         # get l channel, target should be in shape (SIZE, SIZE, lab)
         l = tf.slice(target, begin=[0,0,0,0], size=[-1,-1,-1,1])
@@ -83,7 +86,8 @@ if __name__ == '__main__':
         # training (and checking in with training)
         epoch_loss_agg = []
         for input, target in train_ds:
-            train_loss = train_step(model, input, target, loss, optimizer)
+            #train_loss = train_step(model, input, target, loss, optimizer)
+            train_loss = model.train_step((input, target))
             epoch_loss_agg.append(train_loss)
         # track training loss
         train_losses.append(tf.reduce_mean(epoch_loss_agg))

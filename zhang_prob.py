@@ -41,22 +41,26 @@ def bin_to_ab(bin_nr):
 
     ab = tf.stack([a,b], axis=0)
     return ab
-    return tf.constant([[[[a,b]]]], dtype=tf.float32)
 
 
 def ab_to_bin(ab):
-    # range [-110;110] -> [0;21]
-
+    """
+    Input is Tensor of shape (2,)
+    """
     #a = math.floor((a+110) / 10)
     #b = math.floor((b+110) / 10)
     #return 22*b+a
 
     print(ab)
 
-    ab = tf.reshap(ab, [2])
+    # range [-110;110] -> [0;21]
     ab = (ab+110)/10
-    ab = tf.math.floor(ab)
-    return tf.math.reduce_sum(tf.math.multiply(tf.constant([1,22])))
+    ab = tf.cast(tf.math.floor(ab), dtype=tf.int32)
+
+    # a_value * 1 + b_value * 22
+    bin = tf.math.reduce_sum(tf.math.multiply(ab, tf.constant([1,22], dtype=tf.int32)))
+    print(bin)
+    return bin
 
 def ab_to_nearest(a, b):
     # TODO: do it better/faster!!!
@@ -93,18 +97,36 @@ def H_1_hard(target):
     """
     Returns Tensor of one-hot vectors (probability distributions) with matching bin = 1, 0 otherwise
     """
-    ret = tf.zeros(shape=[BATCH_SIZE, SIZE[0], SIZE[1], Q_SIZE])
-    for b in range(BATCH_SIZE):
-        for h in range(SIZE[0]):
-            for w in range(SIZE[1]):
-                bins = ab_to_bin(target[:,h,w,:])
-                prob_tensor = tf.one_hot(indices=bins, depth=Q_SIZE, on_value=1, off_value=0)
-                ret[b,h,w,:] = prob_tensor
+    shape = tf.shape(target)
 
-    return target
+    #ret = tf.zeros(shape=[shape[0], shape[1], shape[2], Q_SIZE])
+    tb = tf.TensorArray(tf.float32, size=shape[0])
+    ib = 0
+    for b in range(shape[0]):
+        th = tf.TensorArray(tf.float32, size=shape[1])
+        ih = 0
+
+        for h in range(shape[1]):
+            tw = tf.TensorArray(tf.float32, size=shape[2])
+            iw = 0
+
+            for w in range(shape[2]):
+                bins = ab_to_bin(target[b,h,w,:])
+                prob_tensor = tf.one_hot(indices=bins, depth=Q_SIZE, on_value=1, off_value=0)
+                tw = tw.write(iw, prob_tensor)
+                iw += 1
+            th = th.write(tf.reshape(tw.stack(), shape=[shape[2], Q_SIZE]))
+            ih += 1
+        
+        tb = tb.write(tf.reshape(th.stack(), shape=[shape[1], shape[2], Q_SIZE]))
+        ib += 1
+        
+    return tf.reshape(tb.stack(), shape=[shape[0], shape[1], shape[2], Q_SIZE])
     #return tf.one_hot(indices=[ab_to_bin(a, b)], depth=Q_SIZE, on_value=1, off_value=0)
 
 
+
+# TODO!!!
 def H_1_soft(a, b):
     bins = ab_to_nearest(a, b)
 
@@ -336,7 +358,7 @@ class CIC_Prob(tf.keras.Model):
                                    strides=1, 
                                    padding="valid",
                                    activation=None,
-                                   use_bias= True)
+                                   use_bias= True),
 
             # the following order model_out(softmax(x))
             # model_out == Conv2D(filters=2, ) 
@@ -352,13 +374,13 @@ class CIC_Prob(tf.keras.Model):
             # do we need upsampling ??? like here
             # self.upsample4 = nn.Upsample(scale_factor=4, mode='bilinear')
             #inserting the upsampling
-
+            tf.keras.layers.UpSampling2D(size=(4, 4), data_format='channels_last', interpolation='bilinear')
         ]
 
-        self.upsample_layer = tf.keras.layers.UpSampling2D(size=(4, 4), data_format='channels_last', interpolation='bilinear')
+        #self.upsample_layer = tf.keras.layers.UpSampling2D(size=(4, 4), data_format='channels_last', interpolation='bilinear')
     
     # can stay the same
-    #@tf.function
+    @tf.function
     def call(self, x, training=False):
         for layer in self.all_layers:
             try:
@@ -374,34 +396,48 @@ class CIC_Prob(tf.keras.Model):
         #ret = np.zeros(shape)
         shape = tf.shape(x)
 
+        #print("x_before")
         #print(x)
-        tb = tf.TensorArray(tf.float32, size=shape[0])#, element_shape=shape)
+
+        #print(x)
+        tb = tf.TensorArray(tf.float32, size=shape[0], name="tb")#, element_shape=shape)
 
         # now fill ret by using H()
         ib = 0
         for b in range(shape[0]):
-            th = tf.TensorArray(tf.float32, size=shape[1])
+            th = tf.TensorArray(tf.float32, size=shape[1], name="th")
             ih = 0
             for h in range(shape[1]):
-                tw = tf.TensorArray(tf.float32, size=shape[2])
+                tw = tf.TensorArray(tf.float32, size=shape[2], name="tw")
                 iw = 0
                 for w in range(shape[2]):
                     Z = x[b,h,w,:]
                     #print(tf.shape(Z))
                     ab = H(Z)
+                    #print("ab")
+                    #print(ab)
                     #x[b,h,w,:] = ab
-                    tw.write(iw, ab)
+                    tw = tw.write(iw, ab)
                     iw += 1
                     
-                th.write(ih, tf.reshape(tw.stack(), shape=[shape[2], 2]))
+                tw_resh = tf.reshape(tw.stack(), shape=[shape[2], 2])
+                #print("tw")
+                #print(tw_resh)
+                th = th.write(ih, tw_resh)
                 ih += 1
-            tb.write(ib, tf.reshape(th.stack(), shape=[shape[1], shape[2], 2]))
+
+            th_resh = tf.reshape(th.stack(), shape=[shape[1], shape[2], 2])
+            #print("th")
+            #print(th_resh)
+            tb = tb.write(ib, th_resh)
             ib += 1
 
         x = tf.reshape(tb.stack(), shape=[shape[0], shape[1], shape[2], 2])
+        #print("x_after")
+        #print(x)
 
         #x = tf.constant(ret, dtype=tf.float32)
-        x = self.upsample_layer(x)
+        #x = self.upsample_layer(x)
         x = (x*255) - 128
         return x
         
@@ -414,8 +450,7 @@ class CIC_Prob(tf.keras.Model):
             metric.reset_states()
     
     
-    
-    # TODO check again        
+          
     #@tf.function
     def train_step(self, data):
         
@@ -463,10 +498,7 @@ class CIC_Prob(tf.keras.Model):
 
         for (x, target) in data:
             predictions = self(x, training=False)
-            print("Prediciton")
-            print(predictions)
-            #print(target)
-            target = target[:,:,:,1:]
+            target = H_1_hard(target[:,:,:,1:])
             loss = self.loss_function(target, predictions)# + tf.reduce_sum(self.losses)
             
             #self.metrics[0].update_state(loss)

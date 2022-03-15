@@ -10,7 +10,6 @@ import tensorflow as tf
 # "colorful image colorization"
 
 import math
-import numpy as np
 
 if not IN_COLAB:
     from loss.prob_loss import ProbLoss
@@ -26,10 +25,43 @@ Q_SIZE = 22*22
 
 # use hard or soft h^-1 encoding
 H_1_HARD = False
-SIGMA = 5 # -> for soft encoded H^-1
+SIGMA = 5 # -> for soft encoded H^-1, not used right now
+N_NEIGHBOURS = 8
+
+# tensor that contains all <N_NEIGHBOURS> nearest neighbours of each bin
+lookup_tensor = None
+
+# TODO: calculate values of gaussian distribution regarding bins distances, 
+#       save tensor of shape Q_SIZE for each bin -> gaussian not uniform distribution over nearest n bins
+def fill_lookup_tensor():
+    """
+    Fills the lookup tensor by calculating euklidean distances inbetween all bins
+    """
+    global lookup_tensor
+
+    def euclidean_dist(x, y):
+        return math.sqrt((x[0]-y[0])**2+(x[1]-y[1])**2)
+
+    def take_second(x):
+        return x[1]
 
 
-@tf.function
+    ta = tf.TensorArray(dtype=tf.uint32, size=Q_SIZE)
+    bin_centers = [bin_to_ab(tf.constant([bin], dtype=tf.uint32)).numpy() for bin in range(Q_SIZE)]
+
+    for i in range(Q_SIZE):
+        dists = [(j, euclidean_dist(bin_centers[i], bin_centers[j])) for j in range(Q_SIZE)]
+        dists.sort(key=take_second)
+        ret = [bin for bin, dist in dists[:N_NEIGHBOURS]]
+
+
+        ta = ta.write(i, tf.constant(ret, dtype=tf.uint32))
+
+    lookup_tensor = ta.stack()
+
+
+
+@tf.function(experimental_compile=True)
 def bin_to_ab(bin_nr):
     """
     Returns center of bin 'bin_nr'
@@ -57,7 +89,7 @@ def bin_to_ab(bin_nr):
     return ab
 
 
-@tf.function
+@tf.function(experimental_compile=True)
 def ab_to_bin(ab):
     """
     Input is Tensor of shape (2,)
@@ -71,23 +103,15 @@ def ab_to_bin(ab):
     return tf.math.reduce_sum(tf.math.multiply(ab, tf.constant([1,22], dtype=tf.int32)))
 
 
-def ab_to_nearest(a, b):
-    # TODO: do it better/faster!!!
-    points = []
-
-    for bin in range(Q_SIZE):
-        point = bin_to_ab(a, b).numpy()
-        points.append(bin, math.sqrt((a-point[0])**2 + (b-point[1])**2))
-
-    def take_second(x):
-        return x[1]
-
-    points.sort(key=take_second)
-    # return bins and dists
-    return points[:5]
+@tf.function(experimental_compile=True)
+def ab_to_nearest(ab):
+    global lookup_tensor
+    
+    bin = ab_to_bin(ab)
+    return lookup_tensor[bin,:]
 
 
-@tf.function
+@tf.function(experimental_compile=True)
 def H_1(target):
     if H_1_HARD:
         return H_1_hard(target)
@@ -96,7 +120,7 @@ def H_1(target):
 
 
 
-@tf.function
+@tf.function(experimental_compile=True)
 def H(x):
     """
     Function that maps probability distribution Z over the Q bins to one ab value
@@ -109,13 +133,13 @@ def H(x):
     tb = tf.TensorArray(tf.float32, size=shape[0], name="tb")#, element_shape=shape)
     ib = 0
 
-    for b in range(shape[0]):
+    for b in tf.range(shape[0]):
         th = tf.TensorArray(tf.float32, size=shape[1], name="th")
         ih = 0
-        for h in range(shape[1]):
+        for h in tf.range(shape[1]):
             tw = tf.TensorArray(tf.float32, size=shape[2], name="tw")
             iw = 0
-            for w in range(shape[2]):
+            for w in tf.range(shape[2]):
                 Z = x[b,h,w,:]
                 ab = bin_to_ab(tf.math.argmax(Z))
                 tw = tw.write(iw, ab)
@@ -133,7 +157,7 @@ def H(x):
     return x
 
 
-@tf.function
+@tf.function(experimental_compile=True)
 def H_1_hard(target):
     """
     Returns Tensor of one-hot vectors (probability distributions) with matching bin = 1, 0 otherwise
@@ -143,15 +167,15 @@ def H_1_hard(target):
     #ret = tf.zeros(shape=[shape[0], shape[1], shape[2], Q_SIZE])
     tb = tf.TensorArray(tf.float32, size=shape[0])
     ib = 0
-    for b in range(shape[0]):
+    for b in tf.range(shape[0]):
         th = tf.TensorArray(tf.float32, size=shape[1])
         ih = 0
 
-        for h in range(shape[1]):
+        for h in tf.range(shape[1]):
             tw = tf.TensorArray(tf.float32, size=shape[2])
             iw = 0
 
-            for w in range(shape[2]):
+            for w in tf.range(shape[2]):
                 bins = ab_to_bin(target[b,h,w,:])
                 prob_tensor = tf.one_hot(indices=bins, depth=Q_SIZE, on_value=1, off_value=0, dtype=tf.float32)
                 tw = tw.write(iw, prob_tensor)
@@ -167,36 +191,26 @@ def H_1_hard(target):
     return target
 
 
-
+@tf.function(experimental_compile=True)
 def H_1_soft(target):
     shape = tf.shape(target)
 
     tb = tf.TensorArray(tf.float32, size=shape[0])
     ib = 0
-    for b in range(shape[0]):
+    for b in tf.range(shape[0]):
         th = tf.TensorArray(tf.float32, size=shape[1])
         ih = 0
 
-        for h in range(shape[1]):
+        for h in tf.range(shape[1]):
             tw = tf.TensorArray(tf.float32, size=shape[2])
             iw = 0
 
-            for w in range(shape[2]):
+            for w in tf.range(shape[2]):
                 bins = ab_to_nearest(target[b,h,w,:])
+                on_value = 1/tf.shape(bins)[0]
+                prob_dist = tf.one_hot(indices=bins, depth=Q_SIZE, on_value=on_value, off_value=0, dtype=tf.float32)
 
-                prob_dist = [0 for bin in range(Q_SIZE)]
-                sum = 0
-                
-                for bin, dist in bins:
-                    # gaussian kernel
-                    prob_dist[bin] = 1/math.sqrt(2 * math.pi * SIGMA**2) * math.exp(-dist**2 / (2*SIGMA**2))
-                    sum += prob_dist[bin]
-
-                # normalize distribution to sum up to 1
-                for bin, dist in bins:
-                    prob_dist[bin] *= 1/sum
-
-                tw = tw.write(iw, tf.constant(prob_dist, dtype=tf.float32))
+                tw = tw.write(iw, prob_dist)
                 iw += 1
             th = th.write(ih, tf.reshape(tw.stack(), shape=[shape[2], Q_SIZE]))
             ih += 1
@@ -417,11 +431,14 @@ class CIC_Prob(tf.keras.Model):
                                    use_bias= True),
 
             # we need this for the output to be in [0;1] --> loss function takes logarithm of this value!
-            tf.keras.layers.Activation(tf.nn.sigmoid),
 
             #inserting the upsampling
             tf.keras.layers.UpSampling2D(size=(4, 4), data_format='channels_last', interpolation='bilinear')
         ]
+        self.last_activation = tf.keras.layers.Activation(tf.nn.softmax)
+
+        if not H_1_HARD:
+            fill_lookup_tensor()
 
         #self.upsample_layer = tf.keras.layers.UpSampling2D(size=(4, 4), data_format='channels_last', interpolation='bilinear')
     
@@ -433,6 +450,31 @@ class CIC_Prob(tf.keras.Model):
                 x = layer(x,training)
             except:
                 x = layer(x)
+
+        """shape = tf.shape(x)
+        tb = tf.TensorArray(tf.float32, size=shape[0])
+        ib = 0
+        for b in range(shape[0]):
+            th = tf.TensorArray(tf.float32, size=shape[1])
+            ih = 0
+
+            for h in range(shape[1]):
+                tw = tf.TensorArray(tf.float32, size=shape[2])
+                iw = 0
+
+                for w in range(shape[2]):
+
+                    tw = tw.write(iw, self.last_activation(x[t,h,w,:]))
+                    iw += 1
+                th = th.write(ih, tf.reshape(tw.stack(), shape=[shape[2], shape[3]]))
+                ih += 1
+            
+            tb = tb.write(ib, tf.reshape(th.stack(), shape=[shape[1], shape[2], shape[3]]))
+            ib += 1
+            
+        
+        x = tf.reshape(tb.stack(), shape=[shape[0], shape[1], shape[2], shape[3]])"""
+        x = self.last_activation(x)
     
         if training:
             return x

@@ -26,7 +26,7 @@ if __name__ == '__main__':
     val_ds = val_ds.apply(prepare_validation_data)
 
     # parameters
-    NUM_EPOCHS = 5
+    NUM_EPOCHS = 10
     LEARNING_RATE = 0.001
 
     # model and loss
@@ -43,13 +43,13 @@ if __name__ == '__main__':
 
     # testing once before we begin
     #test_loss, test_accuracy = test(model, test_ds, loss)
-    test_loss, test_accuracy = model.test(test_ds)
+    test_loss = model.test(test_ds)
     test_losses.append(test_loss)
-    test_accuracies.append(test_accuracy)
     
     # check how model performs on train data once before we begin
     #train_loss, _ = test(model, train_ds, loss)
-    train_loss, _ = model.test(train_ds)
+    print("Testing untrained model on training data")
+    train_loss = model.test(train_ds)
     train_losses.append(train_loss)
 
     # Sets up a timestamped log directory.
@@ -58,6 +58,7 @@ if __name__ == '__main__':
     file_writer = tf.summary.create_file_writer(logdir)
 
     # save first version validation images before training starts
+    print("Getting first example images from untrained model")
     for input, target in val_ds.take(1):
         prediction = model(input, training=False)
 
@@ -67,6 +68,8 @@ if __name__ == '__main__':
 
         # convert prediction and target back to rgb, input to [0;1]
         input = (input+1)/2
+        #print(prediction)
+        #print(target)
         prediction = tfio.experimental.color.lab_to_rgb(prediction)
         target = tfio.experimental.color.lab_to_rgb(target)
 
@@ -92,9 +95,10 @@ if __name__ == '__main__':
         # track training loss
         train_losses.append(tf.reduce_mean(epoch_loss_agg))
         # testing, so we can track accuracy and test loss
-        test_loss, test_accuracy = test(model, test_ds, loss)
+        #test_loss, test_accuracy = test(model, test_ds, loss)
+        test_loss = model.test(test_ds)
         test_losses.append(test_loss)
-        test_accuracies.append(test_accuracy)
+        #test_accuracies.append(test_accuracy)
         diff_time = datetime.now() - start_time
         print(f"Epoch {epoch} took {diff_time} to complete.")
 

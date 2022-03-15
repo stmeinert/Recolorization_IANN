@@ -179,8 +179,8 @@ if __name__ == '__main__':
 
             # write images to log directory
             with file_writer.as_default():
-                tf.summary.image('Input', input, max_outputs=BATCH_SIZE, step=epoch)
-                tf.summary.image('Target', target, max_outputs=BATCH_SIZE, step=epoch)
+                #tf.summary.image('Input', input, max_outputs=BATCH_SIZE, step=epoch)
+                #tf.summary.image('Target', target, max_outputs=BATCH_SIZE, step=epoch)
                 tf.summary.image('Prediciton', prediction, max_outputs=BATCH_SIZE, step=epoch)
 
     whole_training_time = datetime.now() - global_start_time

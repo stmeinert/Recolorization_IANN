@@ -33,7 +33,7 @@ def bin_to_ab(bin_nr):
 
     #print(bin_nr)
     b = tf.cast(tf.math.floor(bin_nr / 22), dtype=tf.float32)
-    a = b*22 + tf.cast(bin_nr % 22, dtype=tf.float32)
+    a = tf.cast(bin_nr % 22, dtype=tf.float32)
 
     # range [0;22] -> [-110;110], take center of bin -> -105, not -110
     a = a*10 - 105

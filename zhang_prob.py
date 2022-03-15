@@ -51,7 +51,7 @@ def ab_to_bin(ab):
     #b = math.floor((b+110) / 10)
     #return 22*b+a
 
-    print(ab)
+    #print(ab)
 
     # range [-110;110] -> [0;21]
     ab = (ab+110)/10
@@ -59,7 +59,7 @@ def ab_to_bin(ab):
 
     # a_value * 1 + b_value * 22
     bin = tf.math.reduce_sum(tf.math.multiply(ab, tf.constant([1,22], dtype=tf.int32)))
-    print(bin)
+    #print(bin)
     return bin
 
 def ab_to_nearest(a, b):

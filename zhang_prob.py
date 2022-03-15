@@ -10,7 +10,6 @@ import tensorflow as tf
 # "colorful image colorization"
 
 import math
-import numpy as np
 
 if not IN_COLAB:
     from loss.prob_loss import ProbLoss
@@ -417,11 +416,11 @@ class CIC_Prob(tf.keras.Model):
                                    use_bias= True),
 
             # we need this for the output to be in [0;1] --> loss function takes logarithm of this value!
-            tf.keras.layers.Activation(tf.nn.sigmoid),
 
             #inserting the upsampling
             tf.keras.layers.UpSampling2D(size=(4, 4), data_format='channels_last', interpolation='bilinear')
         ]
+        self.last_activation = tf.keras.layers.Activation(tf.nn.softmax)
 
         #self.upsample_layer = tf.keras.layers.UpSampling2D(size=(4, 4), data_format='channels_last', interpolation='bilinear')
     
@@ -433,6 +432,31 @@ class CIC_Prob(tf.keras.Model):
                 x = layer(x,training)
             except:
                 x = layer(x)
+
+        """shape = tf.shape(x)
+        tb = tf.TensorArray(tf.float32, size=shape[0])
+        ib = 0
+        for b in range(shape[0]):
+            th = tf.TensorArray(tf.float32, size=shape[1])
+            ih = 0
+
+            for h in range(shape[1]):
+                tw = tf.TensorArray(tf.float32, size=shape[2])
+                iw = 0
+
+                for w in range(shape[2]):
+
+                    tw = tw.write(iw, self.last_activation(x[t,h,w,:]))
+                    iw += 1
+                th = th.write(ih, tf.reshape(tw.stack(), shape=[shape[2], shape[3]]))
+                ih += 1
+            
+            tb = tb.write(ib, tf.reshape(th.stack(), shape=[shape[1], shape[2], shape[3]]))
+            ib += 1
+            
+        
+        x = tf.reshape(tb.stack(), shape=[shape[0], shape[1], shape[2], shape[3]])"""
+        x = self.last_activation(x)
     
         if training:
             return x

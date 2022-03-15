@@ -11,6 +11,8 @@ from data_pipeline.data_pipeline import *
 
 from datetime import datetime
 
+from tqdm import tqdm
+
 if not IN_COLAB:
     from zhang import CIC
     from izuka import IizukaRecolorizationModel
@@ -32,8 +34,8 @@ CELEB = 1
 DS = CELEB
 
 # size of training, test and validation sets
-TRAIN_IMAGES = 8192
-TEST_IMAGES = 128
+TRAIN_IMAGES = 32
+TEST_IMAGES = 32
 VAL_IMAGES = 32
 
 
@@ -142,7 +144,7 @@ if __name__ == '__main__':
         
         # training (and checking in with training)
         epoch_loss_agg = []
-        for input, target in train_ds:
+        for input, target in tqdm(train_ds):
             train_loss = model.train_step((input, target))
             epoch_loss_agg.append(train_loss)
         

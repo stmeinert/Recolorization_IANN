@@ -11,8 +11,6 @@ class ProbLoss(tf.keras.losses.Loss):
 
     @tf.function
     def call(self, y_true, y_pred):
-        #print(y_true)
-        #print(y_pred)
         # inputs have shape (batch_size, H, W, Q)
         # loss like described in Let there be color, 2.1
         y_pred = y_pred + EPSILON

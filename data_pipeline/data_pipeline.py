@@ -1,3 +1,9 @@
+try:
+    import google.colab
+    IN_COLAB = True
+except:
+    IN_COLAB = False
+
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
@@ -5,6 +11,19 @@ import tensorflow_datasets as tfds
 import tensorflow_io as tfio
 
 import numpy as np
+
+import zipfile
+import os
+
+
+DS_NAME = "celeb_data_set_preprocessed_part_0_3"
+
+if IN_COLAB:
+    ZIP_DS_PATH = '/content/drive/MyDrive/zip_file/' + DS_NAME + '.zip'
+    EXTRACT_DS_PATH = '/content/current/Dataset'
+else:
+    ZIP_DS_PATH = 'dataset/' + DS_NAME + '.zip'
+    EXTRACT_DS_PATH = 'dataset/Extract'
 
 
 SIZE = (128,128)
@@ -72,6 +91,17 @@ def prepare_validation_data(image_ds):
 
     image_ds = image_ds.batch(BATCH_SIZE).prefetch(20)
     return image_ds
+
+
+def unzip_and_load_ds():
+    path = os.path.join(os.getcwd(), EXTRACT_DS_PATH, 'content', DS_NAME)
+
+    # only extract again if path does not exist!
+    if not os.path.exists(path):
+      with zipfile.ZipFile(ZIP_DS_PATH, 'r') as zip_ref:
+          zip_ref.extractall(EXTRACT_DS_PATH)
+
+    return tf.data.experimental.load(path,compression= 'GZIP')
 
 
 #################################################

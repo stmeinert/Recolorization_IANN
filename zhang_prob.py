@@ -1,18 +1,26 @@
+try:
+    import google.colab
+    IN_COLAB = True
+except:
+    IN_COLAB = False
+
+
 import tensorflow as tf
 #create the model, like in https://link.springer.com/chapter/10.1007/978-3-319-46487-9_40
 # "colorful image colorization"
 
 import math
 import numpy as np
-from loss.prob_loss import ProbLoss
-from data_pipeline.data_pipeline import BATCH_SIZE, SIZE
+
+if not IN_COLAB:
+    from loss.prob_loss import ProbLoss
 
 
 #################################################################
 # Functions used for mapping between distribution and real values
 #################################################################
 
-LEARNING_RATE = 0.0001
+LEARNING_RATE = 0.001
 
 Q_SIZE = 22*22
 
@@ -21,6 +29,7 @@ H_1_HARD = False
 SIGMA = 5 # -> for soft encoded H^-1
 
 
+@tf.function
 def bin_to_ab(bin_nr):
     """
     Returns center of bin 'bin_nr'
@@ -48,6 +57,7 @@ def bin_to_ab(bin_nr):
     return ab
 
 
+@tf.function
 def ab_to_bin(ab):
     """
     Input is Tensor of shape (2,)
@@ -155,6 +165,7 @@ def H_1_hard(target):
     
     target = tf.reshape(tb.stack(), shape=[shape[0], shape[1], shape[2], Q_SIZE])
     return target
+
 
 
 def H_1_soft(target):

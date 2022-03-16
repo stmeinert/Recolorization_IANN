@@ -78,8 +78,8 @@ if __name__ == '__main__':
         test_ds = ds.take(TEST_IMAGES)
         val_ds = ds.skip(TEST_IMAGES).take(VAL_IMAGES)
         train_ds = ds.skip(TEST_IMAGES+VAL_IMAGES).take(TRAIN_IMAGES)
-
-
+    
+    
     # model and loss
     model = None
 

@@ -66,11 +66,7 @@ def bin_to_ab(bin_nr):
     """
     Returns center of bin 'bin_nr'
     """
-    if bin_nr == None:
-        bin_nr = tf.constant([0], dtype=tf.float32)
-
-    if bin_nr < 0 or bin_nr >= Q_SIZE:
-        return tf.constant([0,0], dtype=tf.float32)
+    bin_nr = tf.clip_by_value(bin_nr, clip_value_min=0, clip_value_max=(Q_SIZE-1))
 
     #   a -->
     # b  0 |  1 |  2  | ...
@@ -235,6 +231,7 @@ class CIC_Prob(tf.keras.Model):
         # TODO change optimizer, question, what optimizer
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
         self.loss_function = ProbLoss()
+        #self.loss_function = tf.keras.losses.MeanSquaredError()
     
 
         self.all_layers = [
@@ -451,29 +448,6 @@ class CIC_Prob(tf.keras.Model):
             except:
                 x = layer(x)
 
-        """shape = tf.shape(x)
-        tb = tf.TensorArray(tf.float32, size=shape[0])
-        ib = 0
-        for b in range(shape[0]):
-            th = tf.TensorArray(tf.float32, size=shape[1])
-            ih = 0
-
-            for h in range(shape[1]):
-                tw = tf.TensorArray(tf.float32, size=shape[2])
-                iw = 0
-
-                for w in range(shape[2]):
-
-                    tw = tw.write(iw, self.last_activation(x[t,h,w,:]))
-                    iw += 1
-                th = th.write(ih, tf.reshape(tw.stack(), shape=[shape[2], shape[3]]))
-                ih += 1
-            
-            tb = tb.write(ib, tf.reshape(th.stack(), shape=[shape[1], shape[2], shape[3]]))
-            ib += 1
-            
-        
-        x = tf.reshape(tb.stack(), shape=[shape[0], shape[1], shape[2], shape[3]])"""
         x = self.last_activation(x)
     
         if training:

@@ -7,8 +7,6 @@ except:
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-from data_pipeline.data_pipeline import *
-
 from datetime import datetime
 
 from tqdm import tqdm
@@ -17,7 +15,7 @@ if not IN_COLAB:
     from zhang import CIC
     from izuka import IizukaRecolorizationModel
     from zhang_prob import CIC_Prob
-
+    from data_pipeline.data_pipeline import *
     from loss.l2_loss import L2_Loss
 
 
@@ -82,6 +80,7 @@ if __name__ == '__main__':
     
     # model and loss
     model = None
+    #print("Creating model")
 
     if MODEL == ZHANG:
         model = CIC()

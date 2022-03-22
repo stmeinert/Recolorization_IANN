@@ -1,5 +1,5 @@
 import tensorflow as tf
-from fusion_layer import FusionLayer
+from src.iizuka.fusion_layer import FusionLayer
 
 class ColorizationNet(tf.keras.layers.Layer):
 

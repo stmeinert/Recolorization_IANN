@@ -1,6 +1,6 @@
-import low_level_features_network
-import mid_level_features_network
-import global_features_network
-import fusion_layer
-import colorization_network
-import iizuka_recolorization_model
+import src.iizuka.low_level_features_network
+import src.iizuka.mid_level_features_network
+import src.iizuka.global_features_network
+import src.iizuka.fusion_layer
+import src.iizuka.colorization_network
+import src.iizuka.iizuka_recolorization_model

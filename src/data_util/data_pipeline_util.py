@@ -77,7 +77,7 @@ def unzip_and_load_ds(ds_name, extract_ds_path, zip_ds_path):
     # only extract again if path does not exist!
     if not os.path.exists(path):
       with zipfile.ZipFile(zip_ds_path, 'r') as zip_ref:
-          zip_ref.extractall(zip_ds_path)
+          zip_ref.extractall(extract_ds_path)
 
     return tf.data.experimental.load(path,compression= 'GZIP')
 

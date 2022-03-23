@@ -12,10 +12,7 @@ class CIC(tf.keras.Model):
         super(CIC, self).__init__()
         # TODO change optimizer, question, what optimizer
         self.optimizer = tf.keras.optimizers.Adam()
-
-        #TODO change the loss function
-        self.loss_function = L2_Loss() 
-    
+        self.loss_function = L2_Loss()
 
         self.all_layers = [
             # inserting my own layers

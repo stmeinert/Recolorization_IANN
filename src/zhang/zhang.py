@@ -3,7 +3,7 @@ import tensorflow as tf
 # "colorful image colorization"
 
 import math
-from src.zhang.l2_loss import L2_Loss
+from src.zhang.l2_loss import L2_Loss as loss
 
 divide_factor = 2
 
@@ -12,7 +12,7 @@ class CIC(tf.keras.Model):
         super(CIC, self).__init__()
         # TODO change optimizer, question, what optimizer
         self.optimizer = tf.keras.optimizers.Adam()
-        self.loss_function = L2_Loss()
+        self.loss_function = loss()
 
         self.all_layers = [
             # inserting my own layers

@@ -18,13 +18,15 @@ class ProbLoss(tf.keras.losses.Loss):
            #print(self.weights_tensor)
 
 
-    @tf.function(experimental_compile=True)
+    @tf.function#(experimental_compile=True)
     def call(self, y_true, y_pred):
         # inputs have shape (batch_size, H, W, Q)
         # loss like described in Let there be color, 2.1
 
         # make sure y_pred is not 0, log(0) is not defined
         y_pred = y_pred + EPSILON
+
+        #return tf.math.multiply(tf.math.reduce_sum(tf.math.multiply(y_true, tf.math.log(y_pred))), tf.constant([-1], dtype=tf.float32))
 
         sum_tensor = tf.constant(0.,dtype=tf.float32)
         log_mult = tf.math.multiply(y_true, tf.math.log(y_pred))

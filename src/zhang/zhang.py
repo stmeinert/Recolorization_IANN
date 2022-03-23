@@ -3,22 +3,25 @@ import tensorflow as tf
 # "colorful image colorization"
 
 import math
+try:
+    import google.colab
+    IN_COLAB = True
+except:
+    IN_COLAB = False
 
+if not IN_COLAB:
+    from src.zhang.loss.l2_loss import L2_Loss
 
+divide_factor = 2
 
 class CIC(tf.keras.Model):
     def __init__(self):
         super(CIC, self).__init__()
         # TODO change optimizer, question, what optimizer
         self.optimizer = tf.keras.optimizers.Adam()
-        
-        self.metrics_list = [
-                        tf.keras.metrics.Mean(name="loss"),
-                        tf.keras.metrics.CategoricalAccuracy(name="acc"),
-                        tf.keras.metrics.TopKCategoricalAccuracy(3,name="top-3-acc") 
-                       ]
+
         #TODO change the loss function
-        self.loss_function = tf.keras.losses.CategoricalCrossentropy(from_logits=True)   
+        self.loss_function = L2_Loss() 
     
 
         self.all_layers = [
@@ -97,7 +100,7 @@ class CIC(tf.keras.Model):
                                    activation=None,
                                    use_bias= True),
             tf.keras.layers.Activation(tf.nn.relu),
-            tf.keras.layers.Conv2D(filters=512, 
+            tf.keras.layers.Conv2D(filters=512/divide_factor, 
                                    kernel_size=3,  
                                    strides=1, 
                                    padding="same",
@@ -107,7 +110,7 @@ class CIC(tf.keras.Model):
             tf.keras.layers.BatchNormalization(),
 
             # conv_5
-            tf.keras.layers.Conv2D(filters=512, 
+            tf.keras.layers.Conv2D(filters=512/divide_factor, 
                                    kernel_size=3,
                                    dilation_rate = 2,  
                                    strides=1, 
@@ -115,7 +118,7 @@ class CIC(tf.keras.Model):
                                    activation=None,
                                    use_bias= True),
             tf.keras.layers.Activation(tf.nn.relu),
-            tf.keras.layers.Conv2D(filters=512, 
+            tf.keras.layers.Conv2D(filters=512/divide_factor, 
                                    kernel_size=3,
                                    dilation_rate = 2, 
                                    strides=1, 
@@ -123,7 +126,7 @@ class CIC(tf.keras.Model):
                                    activation=None,
                                    use_bias= True),
             tf.keras.layers.Activation(tf.nn.relu),
-            tf.keras.layers.Conv2D(filters=512, 
+            tf.keras.layers.Conv2D(filters=512/divide_factor, 
                                    kernel_size=3,
                                    dilation_rate = 2,
                                    strides=1, 
@@ -134,7 +137,7 @@ class CIC(tf.keras.Model):
             tf.keras.layers.BatchNormalization(),
 
              # conv_6 same as conv_5
-            tf.keras.layers.Conv2D(filters=512, 
+            tf.keras.layers.Conv2D(filters=512/divide_factor, 
                                    kernel_size=3,
                                    dilation_rate = 2,  
                                    strides=1, 
@@ -142,7 +145,7 @@ class CIC(tf.keras.Model):
                                    activation=None,
                                    use_bias= True),
             tf.keras.layers.Activation(tf.nn.relu),
-            tf.keras.layers.Conv2D(filters=512, 
+            tf.keras.layers.Conv2D(filters=512/divide_factor, 
                                    kernel_size=3,
                                    dilation_rate = 2, 
                                    strides=1, 
@@ -150,7 +153,7 @@ class CIC(tf.keras.Model):
                                    activation=None,
                                    use_bias= True),
             tf.keras.layers.Activation(tf.nn.relu),
-            tf.keras.layers.Conv2D(filters=512, 
+            tf.keras.layers.Conv2D(filters=512/divide_factor, 
                                    kernel_size=3,
                                    dilation_rate = 2,
                                    strides=1, 
@@ -162,7 +165,7 @@ class CIC(tf.keras.Model):
 
 
             #conv_7
-            tf.keras.layers.Conv2D(filters=512, 
+            tf.keras.layers.Conv2D(filters=512/divide_factor, 
                                    kernel_size=3, 
                                    strides=1, 
                                    padding="same",
@@ -207,30 +210,20 @@ class CIC(tf.keras.Model):
             
             #final conv2D-Layer
 
-            """tf.keras.layers.Conv2D(filters=313, 
+            tf.keras.layers.Conv2D(filters=2, 
                                    kernel_size=1,
                                    strides=1, 
                                    padding="valid",
                                    activation=None,
                                    use_bias= True),
-            # the following order model_out(softmax(x))
-            # model_out == Conv2D(filters=2, ) 
-            #tf.keras.layers.Activation(tf.nn.softmax),
-            tf.keras.layers.Activation(tf.nn.sigmoid),"""
-            tf.keras.layers.Conv2D(filters=2, 
-                                   kernel_size=1,
-                                   strides=1, 
-                                   padding="valid",
-                                   dilation_rate = 1,
-                                   activation=None,
-                                   use_bias= False),
-            # do we need upsampling ??? like here
-            # self.upsample4 = nn.Upsample(scale_factor=4, mode='bilinear')
-            #inserting the upsampling
 
+            # we need this for the output to be in [0;1] --> loss function takes logarithm of this value!
+
+            #inserting the upsampling
             tf.keras.layers.UpSampling2D(size=(4, 4), data_format='channels_last', interpolation='bilinear')
         ]
     
+
     # can stay the same
     def call(self, x, training=False):
 
@@ -242,47 +235,32 @@ class CIC(tf.keras.Model):
        
         x = (x*255) - 128
         return x
-    
-    def reset_metrics(self):
-        
-        for metric in self.metrics:
-            metric.reset_states()
-    # TODO check again        
+
+
     @tf.function
     def train_step(self, data):
-        
-        x, targets = data
-        
+        x, target = data
+        loss = -1
+
         with tf.GradientTape() as tape:
-            predictions = self(x, training=True)
-            
-            loss = self.loss_function(targets, predictions) + tf.reduce_sum(self.losses)
+            prediction = self(x)
+
+            loss = self.loss_function(target[:,:,:,1:], prediction)
         
         gradients = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
         
         # update loss metric
-        self.metrics[0].update_state(loss)
+        return loss
         
-        # for all metrics except loss, update states (accuracy etc.)
-        for metric in self.metrics[1:]:
-            metric.update_state(targets,predictions)
-
-        # Return a dictionary mapping metric names to current value
-        return {m.name: m.result() for m in self.metrics}
-
+    
     @tf.function
-    def test_step(self, data):
+    def test(self, data):
+        loss = 0.
+        i = 0.
+        for (x, target) in data:
+            predictions = self(x)
+            loss += self.loss_function(target[:,:,:,1:], predictions)
+            i += 1.
 
-        x, targets = data
-        
-        predictions = self(x, training=False)
-        
-        loss = self.loss_function(targets, predictions) + tf.reduce_sum(self.losses)
-        
-        self.metrics[0].update_state(loss)
-        
-        for metric in self.metrics[1:]:
-            metric.update_state(targets, predictions)
-
-        return {m.name: m.result() for m in self.metrics}
+        return loss / i

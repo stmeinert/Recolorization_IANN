@@ -1,20 +1,12 @@
 # Model
 # zhang_prob
-try:
-    import google.colab
-    IN_COLAB = True
-except:
-    IN_COLAB = False
-
 
 import tensorflow as tf
 #create the model, like in https://link.springer.com/chapter/10.1007/978-3-319-46487-9_40
 # "colorful image colorization"
 
 import math
-
-if not IN_COLAB:
-    from src.zhang_prob.loss.prob_loss import ProbLoss
+from src.zhang_prob.loss.prob_loss import ProbLoss
 
 
 #################################################################

@@ -3,14 +3,7 @@ import tensorflow as tf
 # "colorful image colorization"
 
 import math
-try:
-    import google.colab
-    IN_COLAB = True
-except:
-    IN_COLAB = False
-
-if not IN_COLAB:
-    from src.zhang.loss.l2_loss import L2_Loss
+from src.zhang.loss.l2_loss import L2_Loss
 
 divide_factor = 2
 

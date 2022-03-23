@@ -3,7 +3,7 @@ import tensorflow as tf
 # "colorful image colorization"
 
 import math
-from loss.l2_loss import L2_Loss
+from src.zhang.loss.l2_loss import L2_Loss
 
 divide_factor = 2
 

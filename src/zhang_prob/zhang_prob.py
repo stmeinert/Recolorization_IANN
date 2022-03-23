@@ -6,7 +6,7 @@ import tensorflow as tf
 # "colorful image colorization"
 
 import math
-from src.zhang_prob.loss.prob_loss import ProbLoss
+from loss.prob_loss import ProbLoss
 
 
 #################################################################

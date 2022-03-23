@@ -1,8 +1,8 @@
 import tensorflow as tf
-from low_level_features_network import LowLevelFeatNet
-from mid_level_features_network import MidLevelFeatNet
-from global_features_network import GlobalFeatNet
-from colorization_network import ColorizationNet
+from src.iizuka.low_level_features_network import LowLevelFeatNet
+from src.iizuka.mid_level_features_network import MidLevelFeatNet
+from src.iizuka.global_features_network import GlobalFeatNet
+from src.iizuka.colorization_network import ColorizationNet
 
 class IizukaRecolorizationModel(tf.keras.Model):
 

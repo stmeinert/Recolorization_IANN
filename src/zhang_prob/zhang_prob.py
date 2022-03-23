@@ -13,7 +13,7 @@ from src.zhang_prob.loss.prob_loss import ProbLoss
 # Functions used for mapping between distribution and real values
 #################################################################
 
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.00003
 
 Q_SIZE = 22*22
 
@@ -222,11 +222,12 @@ divide_factor = 2
 class CIC_Prob(tf.keras.Model):
     def __init__(self):
         super(CIC_Prob, self).__init__()
-        # TODO change optimizer, question, what optimizer
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
         self.loss_function = ProbLoss()
-        #self.loss_function = tf.keras.losses.MeanSquaredError()
-    
+        
+        self.metrics_list = [
+                        tf.keras.metrics.Mean(name="loss"),
+                        ]
 
         self.all_layers = [
             # inserting my own layers
@@ -474,19 +475,36 @@ class CIC_Prob(tf.keras.Model):
         
         gradients = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
-        
+
         # update loss metric
-        return loss
+        self.metrics[0].update_state(loss)
+        
+        # for all metrics except loss, update states (accuracy etc.)
+        for metric in self.metrics[1:]:
+            metric.update_state(target,prediction)
+        
+        # Return a dictionary mapping metric names to current value
+        return {m.name: m.result() for m in self.metrics}
         
     
     @tf.function
-    def test(self, data):
-        loss = 0.
-        i = 0.
-        for (x, target) in data:
-            predictions = self(x, training=True)
-            target = H_1_hard(target[:,:,:,1:])
-            loss += self.loss_function(target, predictions)
-            i += 1.
+    def test_step(self, data):
+        x, target = data
 
-        return loss / i
+        predictions = self(x, training=True)
+        target = H_1_hard(target[:,:,:,1:])
+        loss += self.loss_function(target, predictions)
+
+        self.metrics[0].update_state(loss)
+        
+        for metric in self.metrics[1:]:
+            metric.update_state(target, predictions)
+
+        return {m.name: m.result() for m in self.metrics}
+
+
+    @tf.function
+    def reset_metrics(self):
+        
+        for metric in self.metrics:
+            metric.reset_states()

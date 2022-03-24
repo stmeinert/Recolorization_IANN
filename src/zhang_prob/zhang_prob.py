@@ -493,7 +493,7 @@ class CIC_Prob(tf.keras.Model):
 
         predictions = self(x, training=False)
         target = H_1_hard(target[:,:,:,1:])
-        loss += self.loss_function(target, predictions)
+        loss = self.loss_function(target, predictions)
 
         self.metrics[0].update_state(loss)
         

@@ -239,7 +239,7 @@ class CIC(tf.keras.Model):
         loss = -1
 
         with tf.GradientTape() as tape:
-            prediction = self(x)
+            prediction = self(x,training=True)
             loss = self.loss_function(target[:,:,:,1:], prediction)
         
         gradients = tape.gradient(loss, self.trainable_variables)
@@ -260,7 +260,7 @@ class CIC(tf.keras.Model):
     def test_step(self, data):
         x, target = data
 
-        predictions = self(x)
+        predictions = self(x,training=False)
         loss = self.loss_function(target[:,:,:,1:], predictions)
 
         self.metrics[0].update_state(loss)

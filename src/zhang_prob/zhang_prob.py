@@ -436,7 +436,7 @@ class CIC_Prob(tf.keras.Model):
     
     # can stay the same
     @tf.function
-    def call(self, x, training=False):
+    def call(self, x, training=False, return_dist=False):
         for layer in self.all_layers:
             try:
                 x = layer(x,training)
@@ -445,7 +445,7 @@ class CIC_Prob(tf.keras.Model):
 
         x = self.last_activation(x)
     
-        if training:
+        if return_dist:
             return x
 
         x = H(x)
@@ -468,7 +468,7 @@ class CIC_Prob(tf.keras.Model):
         loss = -1
 
         with tf.GradientTape() as tape:
-            prediction = self(x, training=True)
+            prediction = self(x, training=True, return_dist=True)
 
             target = H_1_hard(target[:,:,:,1:])
             loss = self.loss_function(target, prediction)
@@ -491,7 +491,7 @@ class CIC_Prob(tf.keras.Model):
     def test_step(self, data):
         x, target = data
 
-        predictions = self(x, training=True)
+        predictions = self(x, training=False, return_dist=True)
         target = H_1_hard(target[:,:,:,1:])
         loss = self.loss_function(target, predictions)
 

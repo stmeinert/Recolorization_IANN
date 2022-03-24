@@ -214,6 +214,7 @@ class CIC(tf.keras.Model):
                                    use_bias= True),
 
             # we need this for the output to be in [0;1] --> loss function takes logarithm of this value!
+            tf.keras.layers.Activation(tf.nn.relu),
 
             #inserting the upsampling
             tf.keras.layers.UpSampling2D(size=(4, 4), data_format='channels_last', interpolation='bilinear')

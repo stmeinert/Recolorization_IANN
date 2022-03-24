@@ -261,7 +261,7 @@ class CIC(tf.keras.Model):
         x, target = data
 
         predictions = self(x)
-        loss += self.loss_function(target[:,:,:,1:], predictions)
+        loss = self.loss_function(target[:,:,:,1:], predictions)
 
         self.metrics[0].update_state(loss)
         

@@ -491,7 +491,7 @@ class CIC_Prob(tf.keras.Model):
     def test_step(self, data):
         x, target = data
 
-        predictions = self(x, training=False)
+        predictions = self(x, training=True)
         target = H_1_hard(target[:,:,:,1:])
         loss = self.loss_function(target, predictions)
 

@@ -451,16 +451,7 @@ class CIC_Prob(tf.keras.Model):
         x = H(x)
         #x = (x*255) - 128
         return x
-        
 
-
-
-    def reset_metrics(self):
-        
-        for metric in self.metrics:
-            metric.reset_states()
-    
-    
           
     @tf.function
     def train_step(self, data):

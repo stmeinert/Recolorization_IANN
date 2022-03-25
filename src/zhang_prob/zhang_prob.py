@@ -470,7 +470,7 @@ class CIC_Prob(tf.keras.Model):
         with tf.GradientTape() as tape:
             prediction = self(x, training=True, return_dist=True)
 
-            target = H_1_hard(target[:,:,:,1:])
+            target = H_1_soft(target[:,:,:,1:])
             loss = self.loss_function(target, prediction)
         
         gradients = tape.gradient(loss, self.trainable_variables)
@@ -492,7 +492,7 @@ class CIC_Prob(tf.keras.Model):
         x, target = data
 
         predictions = self(x, training=False, return_dist=True)
-        target = H_1_hard(target[:,:,:,1:])
+        target = H_1_soft(target[:,:,:,1:])
         loss = self.loss_function(target, predictions)
 
         self.metrics[0].update_state(loss)

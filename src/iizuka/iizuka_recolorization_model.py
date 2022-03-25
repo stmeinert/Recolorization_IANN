@@ -10,7 +10,7 @@ class IizukaRecolorizationModel(tf.keras.Model):
         super(IizukaRecolorizationModel, self).__init__(**kwargs)
 
         self.rescale = tf.keras.layers.Resizing(224, 224, interpolation='nearest', crop_to_aspect_ratio=True)
-        self.low = LowLevelFeatNet()
+        self.low = LowLevelFeatNet()    # this low-level features network is used twice in call-step and shares weights
         self.mid = MidLevelFeatNet()
         self.glob = GlobalFeatNet()
         self.colorize = ColorizationNet(batch_size)
@@ -56,7 +56,7 @@ class IizukaRecolorizationModel(tf.keras.Model):
         with tf.GradientTape() as tape:
             predictions = self(x, training=True)
             
-            loss = self.loss_function(targets, predictions)# + tf.reduce_sum(self.losses)
+            loss = self.loss_function(targets, predictions)
         
         gradients = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
@@ -81,7 +81,7 @@ class IizukaRecolorizationModel(tf.keras.Model):
         
         predictions = self(x, training=False)
         
-        loss = self.loss_function(targets, predictions)# + tf.reduce_sum(self.losses)
+        loss = self.loss_function(targets, predictions)
         
         self.metrics[0].update_state(loss)
         

@@ -217,7 +217,10 @@ class CIC(tf.keras.Model):
             tf.keras.layers.Activation(tf.nn.relu),
 
             #inserting the upsampling
-            tf.keras.layers.UpSampling2D(size=(4, 4), data_format='channels_last', interpolation='bilinear')
+            tf.keras.layers.UpSampling2D(size=(4, 4), data_format='channels_last', interpolation='bilinear'),
+            
+            #adding sigmoid at the end, so that the output is really between [0;1], even after the upsampling
+            tf.keras.layers.Activation(tf.math.sigmoid)
         ]
     
 

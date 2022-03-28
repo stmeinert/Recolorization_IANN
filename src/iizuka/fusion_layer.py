@@ -1,6 +1,10 @@
 import tensorflow as tf
 
 class FusionLayer(tf.keras.layers.Layer):
+    """
+    This class represents the Fusion Layer which is the first part of the Colorization Network
+    and append the global features at each spatial location of the local mid-level features.
+    """
 
     def __init__(self, batch_size, **kwargs): 
         super(FusionLayer, self).__init__(**kwargs)

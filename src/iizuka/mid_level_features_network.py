@@ -1,6 +1,10 @@
 import tensorflow as tf
 
 class MidLevelFeatNet(tf.keras.layers.Layer):
+    """
+    This class represents the Mid-Level Features Network which extracts local mid-level features
+    from the low-level features and passes them to the Fusion Layer.
+    """
 
     def __init__(self, **kwargs): 
         super(MidLevelFeatNet, self).__init__(**kwargs)

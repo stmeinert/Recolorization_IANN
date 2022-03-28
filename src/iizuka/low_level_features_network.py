@@ -1,6 +1,11 @@
 import tensorflow as tf
 
 class LowLevelFeatNet(tf.keras.layers.Layer):
+    """
+    This class represents the Low-Level Features Network which extracts local low-level features
+    directly from the input image and passes them to the Mid-Level Features Network and 
+    the Globla Features Network.
+    """
 
     def __init__(self, **kwargs): 
         super(LowLevelFeatNet, self).__init__(**kwargs)

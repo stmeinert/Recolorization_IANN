@@ -1,6 +1,10 @@
 import tensorflow as tf
 
 class GlobalFeatNet(tf.keras.layers.Layer):
+    """
+    This class represents the Global Features Network which extracts global features from the
+    low-level features and passes them to the Fusion Layer.
+    """
 
     def __init__(self, **kwargs): 
         super(GlobalFeatNet, self).__init__(**kwargs)

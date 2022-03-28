@@ -40,8 +40,8 @@ def fill_lookup_tensor():
         return x[1]
 
 
-    ta = tf.TensorArray(dtype=tf.uint32, size=Q_SIZE)
-    bin_centers = [bin_to_ab(tf.constant([bin], dtype=tf.uint32)).numpy() for bin in range(Q_SIZE)]
+    ta = tf.TensorArray(dtype=tf.int32, size=Q_SIZE)
+    bin_centers = [bin_to_ab(tf.constant([bin], dtype=tf.int32)).numpy() for bin in range(Q_SIZE)]
 
     for i in range(Q_SIZE):
         dists = [(j, euclidean_dist(bin_centers[i], bin_centers[j])) for j in range(Q_SIZE)]
@@ -49,7 +49,7 @@ def fill_lookup_tensor():
         ret = [bin for bin, dist in dists[:N_NEIGHBOURS]]
 
 
-        ta = ta.write(i, tf.constant(ret, dtype=tf.uint32))
+        ta = ta.write(i, tf.constant(ret, dtype=tf.int32))
 
     lookup_tensor = ta.stack()
 
@@ -196,7 +196,7 @@ def H_1_soft(target):
 
             for w in tf.range(shape[2]):
                 bins = ab_to_nearest(target[b,h,w,:])
-                on_value = 1/tf.shape(bins)[0]
+                on_value = tf.cast(1/tf.shape(bins)[0], dtype=tf.float32)
                 prob_dist = tf.one_hot(indices=bins, depth=Q_SIZE, on_value=on_value, off_value=0, dtype=tf.float32)
 
                 tw = tw.write(iw, prob_dist)

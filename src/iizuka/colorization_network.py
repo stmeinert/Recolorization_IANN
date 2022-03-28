@@ -2,6 +2,11 @@ import tensorflow as tf
 from src.iizuka.fusion_layer import FusionLayer
 
 class ColorizationNet(tf.keras.layers.Layer):
+    """
+    This class represents the Colorization Network which fuses global and mid-level features
+    in a first step and then predicts colorization and upsamples the image to half of the
+    original size.
+    """
 
     def __init__(self, batch_size, **kwargs): 
         super(ColorizationNet, self).__init__(**kwargs)

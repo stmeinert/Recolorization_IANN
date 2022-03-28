@@ -5,6 +5,11 @@ from src.iizuka.global_features_network import GlobalFeatNet
 from src.iizuka.colorization_network import ColorizationNet
 
 class IizukaRecolorizationModel(tf.keras.Model):
+    """
+    This class represents the complete recolorization model proposed by S. Iizuka, E. Simo-Serra, and H. Ishikawa 
+    in 'Let there be color! joint end-to-end learn-ing of global and local image priors for automatic image 
+    colorization with simulta-neous classification' [2016].
+    """
 
     def __init__(self, batch_size, **kwargs): 
         super(IizukaRecolorizationModel, self).__init__(**kwargs)

@@ -31,7 +31,6 @@ class LowLevelFeatNet(tf.keras.layers.Layer):
         self.net_layers.append(tf.keras.layers.Activation(tf.nn.relu))
         self.net_layers.append(tf.keras.layers.BatchNormalization())
 
-
     @tf.function
     def call(self, x, training=False):
         for layer in self.net_layers:

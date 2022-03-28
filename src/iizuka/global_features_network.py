@@ -23,7 +23,8 @@ class GlobalFeatNet(tf.keras.layers.Layer):
         self.net_layers.append(tf.keras.layers.Activation(tf.nn.relu))
         self.net_layers.append(tf.keras.layers.BatchNormalization())
 
-        # NOTE: Paper does not specify how to transition from Conv2D- to Dense-Layer (Flatten causes number of variables to explode)
+        # NOTE: Paper does not specify how to transition from Conv2D- to Dense-Layer 
+        # Flatten causes number of variables to explode, therefore use GlobalMaxPooling2D
         self.net_layers.append(tf.keras.layers.GlobalMaxPooling2D())
         self.net_layers.append(tf.keras.layers.Dense(units=1024))
         self.net_layers.append(tf.keras.layers.Activation(tf.nn.relu))

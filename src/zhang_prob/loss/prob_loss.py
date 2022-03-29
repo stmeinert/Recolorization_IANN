@@ -5,8 +5,7 @@ import numpy as np
 # otherwise we sometimes get loss NaN
 EPSILON = 0.000001
 USE_WEIGHT = True
-#WEIGHTS_PATH = 'weights_tensor.npy'
-WEIGHTS_PATH = 'drive/MyDrive/weights_tensor_30000_1000.npy'
+WEIGHTS_PATH = 'weights_tensor.npy'
 
 class ProbLoss(tf.keras.losses.Loss):
     def __init__(self):
